@@ -23,7 +23,7 @@ export default function App() {
     const json = await resp.json();
     const states = json['states']
     
-    const filtered = states.map(e => {
+    const filtered = states.map((e: any) => {
       return {
         icao24: e[0],
         callSign: e[1],
