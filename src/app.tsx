@@ -3,6 +3,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import React, { useEffect, useState } from 'react';
 import {Buffer} from 'buffer';
+import Flight from './models/flight';
+
 
 export default function SkyLive() {
 
@@ -21,19 +23,8 @@ export default function SkyLive() {
         })
 
     const json = await resp.json();
-    const states = json['states']
-    
-    const filtered = states.map((e: any) => {
-      return {
-        icao24: e[0],
-        callSign: e[1],
-        time: e[2],
-        lastContact: e[3],
-        longitude: e[5],
-        latitude: e[6],
-      }
-    })
-    setFlights(filtered)
+    const liveFlights = json['states'].map((state: any) => Flight.fromOpensky(state))
+    setFlights(liveFlights)
     } catch (e) {
       console.log(e)
     }
@@ -53,8 +44,7 @@ export default function SkyLive() {
         longitudeDelta: 0.0421,
       }}
     >
-      {/* TODO: typescript object baby */}
-      {flights.map(e => (
+      {flights.map((e:Flight) => (
         <Marker
         key={e.icao24}
         coordinate={{latitude: e.latitude, longitude: e.longitude}}
