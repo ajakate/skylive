@@ -4,14 +4,14 @@ import MapView, { Marker } from 'react-native-maps';
 import React, { useEffect, useState } from 'react';
 import {Buffer} from 'buffer';
 import Flight from './models/flight';
-import { Location } from './models/location';
+import { EarthLocation } from './models/earth-location';
 
 
 export default function SkyLive() {
 
   const [flights, setFlights] = useState([]);
 
-  const chicago = new Location(41.739, -87.554)
+  const chicago = new EarthLocation(41.739, -87.554)
   const box = chicago.box(100)
 
   const getFlights = async () => {

@@ -7,7 +7,7 @@ function toDeg(rad: number) {
 }
 
 // https://stackoverflow.com/questions/2637023/how-to-calculate-the-latlng-of-a-point-a-certain-distance-away-from-another
-function destinationPoint(location: Location, brng: number, dist: number) {
+function destinationPoint(location: EarthLocation, brng: number, dist: number) {
     dist = dist / 6371;  
     brng = toRad(brng);  
 
@@ -21,7 +21,7 @@ function destinationPoint(location: Location, brng: number, dist: number) {
                                     Math.cos(dist) - Math.sin(lat1) *
                                     Math.sin(lat2));
 
-    return new Location(toDeg(lat2), toDeg(lon2));
+    return new EarthLocation(toDeg(lat2), toDeg(lon2));
 }
 
 // TODO: do we need to export?
@@ -34,7 +34,7 @@ export class LocationBox {
     ) {}
 }
 
-export class Location {
+export class EarthLocation {
     constructor(
         public latitude: number,
         public longitude: number,
