@@ -4,18 +4,20 @@ import MapView, { Marker } from 'react-native-maps';
 import React, { useEffect, useState } from 'react';
 import {Buffer} from 'buffer';
 import Flight from './models/flight';
+import { Location } from './models/location';
 
 
 export default function SkyLive() {
 
   const [flights, setFlights] = useState([]);
 
-  const chicago = [41.739, -87.554]
+  const chicago = new Location(41.739, -87.554)
+  const box = chicago.box(100)
 
   const getFlights = async () => {
     try {
-      // TODO: haversine :(
-      const resp = await fetch(`https://opensky-network.org/api/states/all?lamin=40.839679636275456&lomin=-88.75914529577126&lamax=42.63832036372454&lomax=-86.34885470422874`,
+      const resp = await fetch(
+        `https://opensky-network.org/api/states/all?lamin=${box.minLat}&lomin=${box.minLong}&lamax=${box.maxLat}&lomax=${box.maxLong}`,
         {
           method: 'GET',
           // TODO: FIX SECRETS ;)
@@ -38,8 +40,8 @@ export default function SkyLive() {
     <MapView
       style={styles.container}
       initialRegion={{
-        latitude: chicago[0],
-        longitude: chicago[1],
+        latitude: chicago.latitude,
+        longitude: chicago.longitude,
         latitudeDelta: 0.0922,
         longitudeDelta: 0.0421,
       }}
