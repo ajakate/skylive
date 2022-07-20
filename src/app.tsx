@@ -34,7 +34,8 @@ export default function SkyLive() {
 		}
 		const box = location.box(100)
 		try {
-			const resp = await fetch(`https://opensky-network.org/api/states/all?lamin=${box.minLat}&lomin=${box.minLong}&lamax=${box.maxLat}&lomax=${box.maxLong}`,
+			const resp = await fetch(
+				`https://opensky-network.org/api/states/all?lamin=${box.minLat}&lomin=${box.minLong}&lamax=${box.maxLat}&lomax=${box.maxLong}`,
 				{
 					method: 'GET',
 					headers: { 'Authorization': 'Basic ' + Buffer.from(OPENSKY_CREDS).toString('base64') }
@@ -73,6 +74,11 @@ export default function SkyLive() {
 				latitudeDelta: 0.2,
 				longitudeDelta: 0.0421,
 			}}>
+			<Marker
+				key={"0"}
+				tracksViewChanges={false}
+				coordinate={{ latitude: location.latitude, longitude: location.longitude }}
+			/>
 			{flights.map((e: Flight) => (
 				<Marker
 					key={e.icao24}
