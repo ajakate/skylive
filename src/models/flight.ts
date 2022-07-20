@@ -6,6 +6,7 @@ export default class Flight {
         public lastContact: number,
         public longitude: number,
         public latitude: number,
+        public heading: number,
     ) {}
 
     static fromOpensky(stateVector: any[]) {
@@ -16,6 +17,7 @@ export default class Flight {
             stateVector[3],
             stateVector[5],
             stateVector[6],
+            stateVector[10]
         )
     }
 }

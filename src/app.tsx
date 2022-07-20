@@ -1,11 +1,13 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, Image } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import React, { useEffect, useState } from 'react';
 import {Buffer} from 'buffer';
 import Flight from './models/flight';
 import { EarthLocation } from './models/earth-location';
 import * as Location from 'expo-location';
+
+const planeImage = require('./assets/airplane.png')
 
 export default function SkyLive() {
 
@@ -29,22 +31,15 @@ export default function SkyLive() {
   const getFlights = async (loc:EarthLocation) => {
     const box = loc.box(100)
 
-    try {
-      const resp = await fetch(
-        `https://opensky-network.org/api/states/all?lamin=${box.minLat}&lomin=${box.minLong}&lamax=${box.maxLat}&lomax=${box.maxLong}`,
-        {
-          method: 'GET',
-          // TODO: FIX SECRETS ;)
-          // headers: {'Authorization': 'Basic ' + Buffer.from('uname:password').toString('base64')}
-        })
-
-        const json = await resp.json();
-        const liveFlights = json['states'].map((state: any) => Flight.fromOpensky(state))
-        setFlights(liveFlights)
-        setLoading(false)
-    } catch (e) {
-      console.log(e)
-    }
+        try {
+            const resp = await fetch(`https://opensky-network.org/api/states/all?lamin=${box.minLat}&lomin=${box.minLong}&lamax=${box.maxLat}&lomax=${box.maxLong}`)
+            const json = await resp.json();
+            const liveFlights = json['states'].map((state: any) => Flight.fromOpensky(state))
+            setFlights(liveFlights)
+            setLoading(false)
+        } catch (e) {
+            console.log(e)
+        }
   }
 
   useEffect(() => {
@@ -62,11 +57,15 @@ export default function SkyLive() {
         }}>
         {flights.map((e:Flight) => (
             <Marker
-            key={e.icao24}
-            coordinate={{latitude: e.latitude, longitude: e.longitude}}
-            title={e.callSign}
-            description={e.icao24}
-            />
+                key={e.icao24}
+                tracksViewChanges={false}
+                image={planeImage}
+                coordinate={{latitude: e.latitude, longitude: e.longitude}}
+                title={e.callSign}
+                description={e.icao24}
+                style={{transform: [{rotate: `${e.heading}deg`}],}}  
+            >
+            </Marker>
         ))}
     </MapView>
   ) : (<Text>loading...</Text>)
@@ -79,4 +78,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  images: {
+    flex: 1,
+    width: 50,
+    height: 50,
+  }
 });
