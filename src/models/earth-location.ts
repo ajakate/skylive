@@ -38,7 +38,12 @@ export class EarthLocation {
     constructor(
         public latitude: number,
         public longitude: number,
+        public isNull: boolean = false
     ) {}
+
+    static null() {
+        return new EarthLocation(0, 0, true);
+    }
 
     // TODO: optimize
     box(dist: number): LocationBox {
