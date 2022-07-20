@@ -6,6 +6,7 @@ import {Buffer} from 'buffer';
 import Flight from './models/flight';
 import { EarthLocation } from './models/earth-location';
 import * as Location from 'expo-location';
+import { OPENSKY_CREDS } from '@env'
 
 const planeImage = require('./assets/airplane.png')
 
@@ -25,26 +26,43 @@ export default function SkyLive() {
 
       let loc = new EarthLocation(fetched.coords.latitude, fetched.coords.longitude)
       setLocation(loc);
-      getFlights(loc);
-  }
+    }
 
-  const getFlights = async (loc:EarthLocation) => {
-    const box = loc.box(100)
-
-        try {
-            const resp = await fetch(`https://opensky-network.org/api/states/all?lamin=${box.minLat}&lomin=${box.minLong}&lamax=${box.maxLat}&lomax=${box.maxLong}`)
-            const json = await resp.json();
-            const liveFlights = json['states'].map((state: any) => Flight.fromOpensky(state))
-            setFlights(liveFlights)
-            setLoading(false)
-        } catch (e) {
-            console.log(e)
-        }
+  const getFlights = async () => {
+    if (location.isNull) {
+        return;
+    }
+    const box = location.box(100)
+    try {
+        const resp = await fetch(`https://opensky-network.org/api/states/all?lamin=${box.minLat}&lomin=${box.minLong}&lamax=${box.maxLat}&lomax=${box.maxLong}`,
+            {
+                method: 'GET',
+                headers: {'Authorization': 'Basic ' + Buffer.from(OPENSKY_CREDS).toString('base64')}
+            }
+        )
+        const json = await resp.json();
+        const liveFlights = json['states'].map((state: any) => Flight.fromOpensky(state))
+        setFlights(liveFlights)
+        setLoading(false)
+    } catch (e) {
+        console.log('http error:', e)
+    }
   }
 
   useEffect(() => {
-      getLocation();
+    getLocation();
   }, []);
+
+  useEffect(() => {
+    getFlights();
+
+    // TODO: enable this at some point
+    // const interval = setInterval(()=>{
+    //     getFlights()
+    // }, 3000)
+    // return() => clearInterval(interval)
+
+  }, [location]);
 
   return !loading ? (
     <MapView
