@@ -1,11 +1,11 @@
-import { Text, ScrollView } from 'react-native';
+import { Text, ScrollView, Linking } from 'react-native';
 import { Marker, Callout } from 'react-native-maps';
 import React, { useEffect, useState, useRef } from 'react';
 
 const planeImage = require('../assets/airplane.png')
 const re = /<script>var trackpollBootstrap = (.*);<\/script>/
 
-// TODO: add unknowns; link to flightaware; fix formatting; error handling
+// TODO: add unknowns; fix formatting; error handling
 export default function FlightMarker(props: any) {
     let flight = props.flight
     let markerRef = useRef(null)
@@ -13,8 +13,10 @@ export default function FlightMarker(props: any) {
     const [loading, setLoading] = useState(true)
     const [meta, SetMeta] = useState({})
 
+    const flightAwareLink = `https://flightaware.com/live/flight/${flight.callSign}`
+
     const getFlightInfo = async () => {
-        const resp = await fetch(`https://flightaware.com/live/flight/${flight.callSign}`)
+        const resp = await fetch(flightAwareLink)
         const text = await resp.text()
 
         let body = JSON.parse(re.exec(text)[1])
@@ -46,7 +48,9 @@ export default function FlightMarker(props: any) {
             rotation={flight.heading}
             onPress={() => getFlightInfo()}
         >
-            <Callout style={{ width: 200, height: 100 }}>
+            <Callout
+                style={{ width: 200, height: 100 }}
+                onPress={() => Linking.openURL(flightAwareLink)}>
                 {loading ?
                     <Text>Loading...</Text> :
                     <ScrollView>
