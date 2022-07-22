@@ -1,15 +1,14 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, ActivityIndicator, Image } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { StyleSheet, Text } from 'react-native';
+import MapView, { Marker, Callout } from 'react-native-maps';
 import React, { useEffect, useState } from 'react';
 import { Buffer } from 'buffer';
 import Flight from './models/flight';
 import { EarthLocation } from './models/earth-location';
 import * as Location from 'expo-location';
 import { OPENSKY_CREDS } from '@env'
+import FlightMarker from './components/flight-marker';
 
-const planeImage = require('./assets/airplane.png')
-
+// TODO: extract utils for http
 export default function SkyLive() {
 
 	const [flights, setFlights] = useState([]);
@@ -23,7 +22,6 @@ export default function SkyLive() {
 		}
 
 		let fetched = await Location.getCurrentPositionAsync({});
-
 		let loc = new EarthLocation(fetched.coords.latitude, fetched.coords.longitude)
 		setLocation(loc);
 	}
@@ -79,18 +77,7 @@ export default function SkyLive() {
 				tracksViewChanges={false}
 				coordinate={{ latitude: location.latitude, longitude: location.longitude }}
 			/>
-			{flights.map((e: Flight) => (
-				<Marker
-					key={e.icao24}
-					tracksViewChanges={false}
-					image={planeImage}
-					coordinate={{ latitude: e.latitude, longitude: e.longitude }}
-					title={e.callSign}
-					description={e.icao24}
-					style={{ transform: [{ rotate: `${e.heading}deg` }], }}
-				>
-				</Marker>
-			))}
+			{flights.map((f: Flight) => <FlightMarker key={f.icao24} flight={f}/>)}
 		</MapView>
 	) : (<Text>loading...</Text>)
 }
