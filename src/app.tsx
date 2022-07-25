@@ -1,5 +1,5 @@
 import { StyleSheet, Text } from 'react-native';
-import MapView, { Marker, Callout } from 'react-native-maps';
+import MapView, { Marker, Callout, UrlTile } from 'react-native-maps';
 import React, { useEffect, useState } from 'react';
 import { Buffer } from 'buffer';
 import Flight from './models/flight';
@@ -72,12 +72,18 @@ export default function SkyLive() {
 				latitudeDelta: 0.2,
 				longitudeDelta: 0.0421,
 			}}>
+			<UrlTile
+				urlTemplate="https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
+				shouldReplaceMapContent={true}
+				maximumZ={19}
+				flipY={false}
+			/>
 			<Marker
 				key={"0"}
 				tracksViewChanges={false}
 				coordinate={{ latitude: location.latitude, longitude: location.longitude }}
 			/>
-			{flights.map((f: Flight) => <FlightMarker key={f.icao24} flight={f}/>)}
+			{flights.map((f: Flight) => <FlightMarker key={f.icao24} flight={f} />)}
 		</MapView>
 	) : (<Text>loading...</Text>)
 }
