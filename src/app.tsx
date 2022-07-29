@@ -10,7 +10,6 @@ import FlightMarker from './components/flight-marker';
 
 // TODO: extract utils for http
 // TODO: reloading refactor
-// TODO: fix styling button
 // TODO: fix loading screen
 export default function SkyLive() {
 
@@ -84,28 +83,11 @@ export default function SkyLive() {
 				{flights.map((f: Flight) => <FlightMarker key={f.icao24} flight={f} />)}
 			</MapView>
 			<View
-				style={{
-					position: 'absolute',
-					bottom: '15%',
-					left: '5%',
-					alignSelf: 'flex-end'
-				}}
-			>
+				style={styles.view}>
 				<TouchableOpacity
-					disabled={reloading}
-					activeOpacity={reloading ? 0.5 : 1}
 					onPress={reloadFlights}
-					style={{
-						height: 60,
-						width: 125,
-						alignItems: "center",
-						backgroundColor: "#79ffb0",
-						padding: 10,
-						borderRadius: 10,
-						borderWidth: 5,
-						borderColor: "blue",
-					}}>
-					<Text style={{ fontSize: 20 }}>{reloading ? "Loading..." : "Reload"}</Text>
+					style={styles.reload}>
+					<Text style={{ fontSize: 20, color: 'white' }}>{reloading ? "Loading..." : "Reload"}</Text>
 				</TouchableOpacity>
 			</View>
 		</View>
@@ -119,9 +101,21 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
-	images: {
-		flex: 1,
-		width: 50,
-		height: 50,
+	view: {
+		position: 'absolute',
+		bottom: '5%',
+		left: '50%',
+		alignSelf: 'flex-end',
+	},
+	reload: {
+		height: 60,
+		width: 125,
+		right: 63,
+		alignItems: "center",
+		backgroundColor: "black",
+		padding: 10,
+		borderRadius: 10,
+		borderWidth: 5,
+		borderColor: "black",
 	}
 });
