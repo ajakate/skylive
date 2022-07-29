@@ -7,10 +7,8 @@ import { EarthLocation } from './models/earth-location';
 import * as Location from 'expo-location';
 import { OPENSKY_CREDS } from '@env'
 import FlightMarker from './components/flight-marker';
+import LoadingScreen from './components/loading-screen';
 
-// TODO: extract utils for http
-// TODO: reloading refactor
-// TODO: fix loading screen
 export default function SkyLive() {
 
 	const [flights, setFlights] = useState([]);
@@ -91,7 +89,7 @@ export default function SkyLive() {
 				</TouchableOpacity>
 			</View>
 		</View>
-	) : (<Text>loading...</Text>)
+	) : <LoadingScreen/>
 }
 
 const styles = StyleSheet.create({

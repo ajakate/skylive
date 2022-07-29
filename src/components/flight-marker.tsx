@@ -5,7 +5,6 @@ import React, { useEffect, useState, useRef } from 'react';
 const planeImage = require('../assets/airplane.png')
 const re = /<script>var trackpollBootstrap = (.*);<\/script>/
 
-// TODO: add unknowns; fix formatting; error handling
 export default function FlightMarker(props: any) {
     let flight = props.flight
     let markerRef = useRef(null)
