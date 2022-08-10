@@ -20,6 +20,11 @@ export default class Flight {
 	}
 
 	secondsStale(): number {
-		return Math.round(( Date.now() / 1000 ) - this.lastContact);
+		try {
+			return Math.round((Date.now() / 1000) - this.lastContact);
+		} catch {
+			return -10;
+		}
+
 	}
 }

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Buffer } from 'buffer';
 import Flight from './models/flight';
 import { EarthLocation } from './models/earth-location';
@@ -15,8 +15,10 @@ export default function SkyLive() {
 	const [location, setLocation] = useState(EarthLocation.null());
 	const [loading, setLoading] = useState(true);
 	const [reloading, setReloading] = useState(false)
+	let mapRef = useRef(null)
+	let reloadButtonOpacity = reloading ? 0.2 : 1
 
-	const getLocation = async () => {
+	const getLocation = async (loadFlights: boolean) => {
 		let { status } = await Location.requestForegroundPermissionsAsync();
 		if (status !== 'granted') {
 			return;
@@ -25,9 +27,12 @@ export default function SkyLive() {
 		let fetched = await Location.getCurrentPositionAsync({});
 		let loc = new EarthLocation(fetched.coords.latitude, fetched.coords.longitude)
 		setLocation(loc);
+		if (loadFlights) {
+			getFlights(loc);
+		}
 	}
 
-	const getFlights = async () => {
+	const getFlights = async (location: EarthLocation) => {
 		if (location.isNull) {
 			return;
 		}
@@ -52,20 +57,29 @@ export default function SkyLive() {
 
 	const reloadFlights = () => {
 		setReloading(true);
-		getFlights();
+		getFlights(location);
+		getLocation(false);
 	}
 
 	useEffect(() => {
-		getLocation();
+		getLocation(true);
 	}, []);
 
 	useEffect(() => {
-		getFlights();
+		if (mapRef.current) {
+			mapRef.current.animateToRegion({
+				latitude: location.latitude,
+				longitude: location.longitude,
+				latitudeDelta: mapRef.current.__lastRegion.latitudeDelta,
+				longitudeDelta: mapRef.current.__lastRegion.longitudeDelta
+			})
+		}
 	}, [location]);
 
 	return !loading ? (
 		<View style={{ flex: 1 }}>
 			<MapView
+				ref={mapRef}
 				style={styles.container}
 				initialRegion={{
 					latitude: location.latitude,
@@ -83,13 +97,14 @@ export default function SkyLive() {
 			<View
 				style={styles.view}>
 				<TouchableOpacity
+					disabled={reloading}
 					onPress={reloadFlights}
-					style={styles.reload}>
+					style={{ ...styles.reload, opacity: reloadButtonOpacity }}>
 					<Text style={{ fontSize: 20, color: 'white' }}>{reloading ? "Loading..." : "Reload"}</Text>
 				</TouchableOpacity>
 			</View>
 		</View>
-	) : <LoadingScreen/>
+	) : <LoadingScreen />
 }
 
 const styles = StyleSheet.create({
