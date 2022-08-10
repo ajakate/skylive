@@ -56,6 +56,7 @@ export default function FlightMarker(props: any) {
                         <Text>{meta.airline} - {flight.callSign}</Text>
                         <Text>{meta.origin.iata} - {meta.origin.name}</Text>
                         <Text>{meta.destination.iata} - {meta.destination.name}</Text>
+                        <Text>{flight.secondsStale()} sec</Text>
                     </ScrollView>
                 }
             </Callout>
