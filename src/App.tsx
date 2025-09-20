@@ -1,35 +1,42 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
+import { useGeolocated } from "react-geolocated";
+
+import LoadingComponent from './components/LoadingComponent';
+import MapComponent from './components/MapComponent';
+
+const truncateCoordinate = (coordinate: number) => {
+  return parseFloat(coordinate.toFixed(6))
+}
 
 function App() {
-  const [count, setCount] = useState(0)
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+  const { coords, isGeolocationAvailable, isGeolocationEnabled } =
+      useGeolocated({
+        positionOptions: {
+          enableHighAccuracy: false,
+        },
+        userDecisionTimeout: 5000,
+      });
+  
+  console.log("geolocationAvailable", isGeolocationAvailable);
+  console.log("geolocationEnabled", isGeolocationEnabled);
+  console.log("geoLocationData", coords);
+
+  if (isGeolocationAvailable && isGeolocationEnabled && coords?.latitude && coords?.longitude) {
+
+    return (
+      <MapComponent
+        latitude={truncateCoordinate(coords.latitude)}
+        longitude={truncateCoordinate(coords.longitude)}
+      />
+    )
+  
+  } else {
+    console.log('Error getting geolocation');
+    return (
+      <LoadingComponent />
+    )
+  }
 }
 
 export default App
