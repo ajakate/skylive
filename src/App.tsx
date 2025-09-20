@@ -34,7 +34,7 @@ function App() {
   } else {
     console.log('Error getting geolocation');
     return (
-      <LoadingComponent />
+      <LoadingComponent isGeolocationAvailable={isGeolocationAvailable} isGeolocationEnabled={isGeolocationEnabled} coords={coords}/>
     )
   }
 }
