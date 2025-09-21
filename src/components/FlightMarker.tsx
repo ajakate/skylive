@@ -2,6 +2,7 @@ import { airplaneIcon } from "../models/icons";
 import 'leaflet-rotatedmarker';
 import { useState } from "react";
 import { Marker, Popup } from 'react-leaflet'
+import Loader from "./Loader";
 
 
 export default function FlightMarker({ flight }) {
@@ -29,7 +30,7 @@ export default function FlightMarker({ flight }) {
                     </>
 
                 ) : (
-                    <p>Loading...</p>
+                    <Loader size = "20px"/>
                 )
                 }
             </Popup>

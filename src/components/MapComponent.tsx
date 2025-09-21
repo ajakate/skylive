@@ -7,6 +7,7 @@ import { EarthLocation } from '../models/earthLocation'
 import Flight from '../models/flight'
 import FlightMarker from './FlightMarker'
 import L from 'leaflet';
+import Loader from './Loader';
 
 const getPlanesForBox = async (minLat: number, minLong: number, maxLat: number, maxLong: number) => {
     const backendUrl = import.meta.env.VITE_API_URL
@@ -88,8 +89,9 @@ export default function MapComponent({ latitude, longitude }) {
       </MapContainer>
     </>
   ) : (
-    <div className="loading">
-      <p>Loading...</p>
+    <div className="loading-main">
+      <div style={{ marginBottom: "30px" }}>Loading the map...</div>
+      <Loader size = "50px"/>
     </div>
   )
 }
