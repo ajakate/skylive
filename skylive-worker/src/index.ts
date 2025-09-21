@@ -107,27 +107,38 @@ async function flightawareGetFlightInfo(request, env, ctx) {
 	const flightAwareLink = `https://flightaware.com/live/flight/${callSign}`;
 	const re = /<script>var trackpollBootstrap = (.*);<\/script>/
 
-
 	const response = await fetch(flightAwareLink, {
 		headers: {
 			"User-Agent": "Mozilla/5.0"
 		}
 	});
-	
-	const text = await response.text()
-	let body = JSON.parse(re.exec(text)[1])
-	let fullInfo = body['flights'][Object.keys(body['flights'])[0]]
-	let airline = fullInfo['codeShare']['airline']['fullName']
-	let current = fullInfo['activityLog']['flights'][0]
-	let origin = { name: current['origin']['friendlyName'], iata: current['origin']['iata'] }
-	let destination = { name: current['destination']['friendlyName'], iata: current['destination']['iata']}
-	
-	const responseBody = {
-		airline: airline,
-		origin: origin,
-		destination: destination
+
+	let responseBody;
+
+	try {
+		const text = await response.text()
+		let body = JSON.parse(re.exec(text)[1])
+		let fullInfo = body['flights'][Object.keys(body['flights'])[0]]
+		let airline = fullInfo['codeShare']['airline']['fullName']
+		let current = fullInfo['activityLog']['flights'][0]
+		let origin = { name: current['origin']['friendlyName'], iata: current['origin']['iata'] }
+		let destination = { name: current['destination']['friendlyName'], iata: current['destination']['iata'] }
+
+		responseBody = {
+			airline: airline,
+			origin: origin,
+			destination: destination
+		}
+	} catch (e) {
+		console.log(e)
+		responseBody = {
+			airline: "Private",
+			origin: { name: "Unknown", iata: "Unknown" },
+			destination: { name: "Unknown", iata: "Unknown" },
+		}
 	}
-	
+
+
 	return new Response(JSON.stringify(responseBody), {
 		headers: {
 			"Access-Control-Allow-Origin": "*",
@@ -137,23 +148,19 @@ async function flightawareGetFlightInfo(request, env, ctx) {
 	});
 }
 
-
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
 		const url = new URL(request.url);
 		const searchParams = url.searchParams;
 		const route = searchParams.get('route');
 
-		console.log('og',  env.OPENSKY_CLIENT_ID)
-
-		if (route === "openskyGetPlanes") {
-			return await openSkyGetPlanes(request, env, ctx);
-		}
-		else if (route === "flightawareGetFlightInfo") {
-			return await flightawareGetFlightInfo(request, env, ctx);
-		}
-		else {
-			return new Response("Invalid route", { status: 404 });
+		switch (route) {
+			case "openskyGetPlanes":
+				return await openSkyGetPlanes(request, env, ctx);
+			case "flightawareGetFlightInfo":
+				return await flightawareGetFlightInfo(request, env, ctx);
+			default:
+				return new Response("Invalid route", { status: 404 });
 		}
 	},
 } satisfies ExportedHandler<Env>;
