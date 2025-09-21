@@ -43,6 +43,6 @@
 }
 
 .leaflet-bottom.leaflet-left .reload-btn {
-  position: relative; /* allows offset without breaking layout */
-  bottom: 50px;       /* move up 20px from the default position */
+  position: relative;
+  bottom: 50px;
 }
