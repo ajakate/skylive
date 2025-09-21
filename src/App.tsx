@@ -11,7 +11,7 @@ const truncateCoordinate = (coordinate: number) => {
 
 function App() {
 
-  const { coords, isGeolocationAvailable, isGeolocationEnabled, ...debug } =
+  const { coords, isGeolocationAvailable, isGeolocationEnabled, positionError...debug } =
     useGeolocated({
       positionOptions: {
         enableHighAccuracy: false,
@@ -27,7 +27,7 @@ function App() {
     return <div>Geolocation is not supported by your browser</div>;
   }
 
-  if (isGeolocationEnabled === false) {
+  if (isGeolocationEnabled === false && positionError) {
     return  <LoadingComponent debug={debug} />;
   }
 
