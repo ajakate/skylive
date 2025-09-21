@@ -33,6 +33,7 @@ const ReloadControl = () => {
       button.style.cursor = "pointer";
       button.style.padding = "6px 10px";
       button.style.fontSize = "18px";
+      button.className = "reload-btn";
 
       L.DomEvent.on(button, "click", (e) => {
         L.DomEvent.stopPropagation(e);
