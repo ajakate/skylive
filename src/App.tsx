@@ -15,8 +15,11 @@ function App() {
     useGeolocated({
       positionOptions: {
         enableHighAccuracy: false,
+        maximumAge: 600000,
+        timeout: 10000,
       },
       userDecisionTimeout: 5000,
+      watchPosition: true,
     });
 
   console.log("geolocationAvailable", isGeolocationAvailable);
