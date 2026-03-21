@@ -7,7 +7,7 @@ import { EarthLocation } from '../models/earthLocation'
 import Flight from '../models/flight'
 import FlightMarker from './FlightMarker'
 import L from 'leaflet';
-import Loader from './Loader';
+
 
 const getPlanesForBox = async (minLat: number, minLong: number, maxLat: number, maxLong: number) => {
     const backendUrl = import.meta.env.VITE_API_URL
@@ -57,7 +57,6 @@ const ReloadControl = () => {
 
 export default function MapComponent({ latitude, longitude }) {
 
-  const [loading, setLoading] = useState(true)
   const [flights, setFlights] = useState([])
 
   useEffect(() => {
@@ -68,31 +67,23 @@ export default function MapComponent({ latitude, longitude }) {
       const liveFlights = response['states'].map((state: any) => Flight.fromOpensky(state))
 
       setFlights(liveFlights)
-      setLoading(false)
     }
     fetchData()
   }, [])
 
-  return !loading ? (
-    <>
-      <MapContainer id="map" center={[latitude, longitude]} zoom={11} scrollWheelZoom={true}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <Marker position={[latitude, longitude]}>
-          <Popup>
-            A pretty CSS3 popup. <br /> Easily customizable.
-          </Popup>
-        </Marker>
-        <ReloadControl/>
-        {flights.map((flight) => <FlightMarker key={flight.icao24} flight={flight} />)}
-      </MapContainer>
-    </>
-  ) : (
-    <div className="loading-main">
-      <div style={{ marginBottom: "30px" }}>Loading the map...</div>
-      <Loader size = "50px"/>
-    </div>
+  return (
+    <MapContainer id="map" center={[latitude, longitude]} zoom={11} scrollWheelZoom={true}>
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <Marker position={[latitude, longitude]}>
+        <Popup>
+          A pretty CSS3 popup. <br /> Easily customizable.
+        </Popup>
+      </Marker>
+      <ReloadControl/>
+      {flights.map((flight) => <FlightMarker key={flight.icao24} flight={flight} />)}
+    </MapContainer>
   )
 }
