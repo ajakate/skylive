@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('https://ajakate.github.io/skylive/sw.js', { scope: 'https://ajakate.github.io/skylive/' })})}

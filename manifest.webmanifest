@@ -1,0 +1,1 @@
+{"name":"SkyLive","short_name":"SkyLive","description":"See airplanes around you","start_url":"https://ajakate.github.io/skylive/","display":"standalone","background_color":"#ffffff","theme_color":"#ffffff","lang":"en","scope":"https://ajakate.github.io/skylive/","icons":[{"src":"airplane.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]}
