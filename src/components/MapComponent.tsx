@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import '../App.css'
 
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
@@ -17,7 +17,7 @@ const getPlanesForBox = async (minLat: number, minLong: number, maxLat: number, 
     return await response.json();
 }
 
-const ReloadControl = () => {
+const ReloadControl = ({ onReload }: { onReload: () => void }) => {
   const map = useMap();
 
   useEffect(() => {
@@ -29,7 +29,7 @@ const ReloadControl = () => {
 
       button.innerHTML = "⟳"; // reload icon
       button.href = "#";
-      button.title = "Reload page";
+      button.title = "Reload flights";
       button.style.cursor = "pointer";
       button.style.padding = "6px 10px";
       button.style.fontSize = "18px";
@@ -38,7 +38,7 @@ const ReloadControl = () => {
       L.DomEvent.on(button, "click", (e) => {
         L.DomEvent.stopPropagation(e);
         L.DomEvent.preventDefault(e);
-        window.location.reload();
+        onReload();
       });
 
       return div;
@@ -49,7 +49,7 @@ const ReloadControl = () => {
     return () => {
       reloadControl.remove();
     };
-  }, [map]);
+  }, [map, onReload]);
 
   return null;
 }
@@ -59,17 +59,17 @@ export default function MapComponent({ latitude, longitude }) {
 
   const [flights, setFlights] = useState([])
 
-  useEffect(() => {
-    const fetchData = async () => {
-      let loc = new EarthLocation(latitude, longitude)
-      let box = loc.box(50)
-      const response = await getPlanesForBox(box.minLat, box.minLong, box.maxLat, box.maxLong)
-      const liveFlights = response['states'].map((state: any) => Flight.fromOpensky(state))
+  const fetchFlights = useCallback(async () => {
+    let loc = new EarthLocation(latitude, longitude)
+    let box = loc.box(50)
+    const response = await getPlanesForBox(box.minLat, box.minLong, box.maxLat, box.maxLong)
+    const liveFlights = response['states'].map((state: any) => Flight.fromOpensky(state))
+    setFlights(liveFlights)
+  }, [latitude, longitude])
 
-      setFlights(liveFlights)
-    }
-    fetchData()
-  }, [])
+  useEffect(() => {
+    fetchFlights()
+  }, [fetchFlights])
 
   return (
     <MapContainer id="map" center={[latitude, longitude]} zoom={11} scrollWheelZoom={true}>
@@ -82,7 +82,7 @@ export default function MapComponent({ latitude, longitude }) {
           A pretty CSS3 popup. <br /> Easily customizable.
         </Popup>
       </Marker>
-      <ReloadControl/>
+      <ReloadControl onReload={fetchFlights}/>
       {flights.map((flight) => <FlightMarker key={flight.icao24} flight={flight} />)}
     </MapContainer>
   )
