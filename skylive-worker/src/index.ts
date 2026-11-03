@@ -11,13 +11,49 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-async function openSkyGetPlanes(request, env, ctx) {
-	const expirationTime = 60 * 29;
-	const debugCacheTime = 60 * 5;
-	const debug = false;
-	const openskyClientId = env.OPENSKY_CLIENT_ID;
-	const openskyClientSecret = env.OPENSKY_CLIENT_SECRET;
+// OpenSky Network blackholes datacenter egress (the connection hangs with no
+// response, from Cloudflare Workers and any datacenter IP, even with valid
+// OAuth credentials), so we serve the same live picture from the keyless
+// community ADS-B mirrors and reshape it into OpenSky's states/all format.
+const ADSB_MIRRORS = [
+	(lat: string, lon: string, dist: string) => `https://api.adsb.lol/v2/lat/${lat}/lon/${lon}/dist/${dist}`,
+	(lat: string, lon: string, dist: string) => `https://opendata.adsb.fi/api/v2/lat/${lat}/lon/${lon}/dist/${dist}`,
+];
 
+// Map a readsb aircraft record onto an OpenSky state vector. OpenSky uses
+// SI units (metres, m/s); readsb uses feet / knots. Only the indices the
+// frontend reads are populated meaningfully, the rest are null as OpenSky
+// itself often returns.
+function toOpenskyState(ac: any, nowSec: number): (string | number | boolean | null)[] {
+	const seen = typeof ac.seen === "number" ? ac.seen : 0;
+	const onGround = ac.alt_baro === "ground";
+	const baroAltFt = typeof ac.alt_baro === "number" ? ac.alt_baro : null;
+	const geoAltFt = typeof ac.alt_geom === "number" ? ac.alt_geom : null;
+	const FT_TO_M = 0.3048;
+	const KT_TO_MS = 0.514444;
+	const FPM_TO_MS = 0.00508;
+	return [
+		ac.hex ?? null,                                                 // 0  icao24
+		typeof ac.flight === "string" ? ac.flight.trim() : null,        // 1  callsign
+		null,                                                           // 2  origin_country
+		Math.round(nowSec - seen),                                      // 3  time_position
+		Math.round(nowSec - seen),                                      // 4  last_contact
+		typeof ac.lon === "number" ? ac.lon : null,                     // 5  longitude
+		typeof ac.lat === "number" ? ac.lat : null,                     // 6  latitude
+		baroAltFt !== null ? baroAltFt * FT_TO_M : null,                // 7  baro_altitude
+		onGround,                                                       // 8  on_ground
+		typeof ac.gs === "number" ? ac.gs * KT_TO_MS : null,            // 9  velocity
+		typeof ac.track === "number" ? ac.track : null,                 // 10 true_track
+		typeof ac.baro_rate === "number" ? ac.baro_rate * FPM_TO_MS : null, // 11 vertical_rate
+		null,                                                           // 12 sensors
+		geoAltFt !== null ? geoAltFt * FT_TO_M : null,                  // 13 geo_altitude
+		ac.squawk ?? null,                                              // 14 squawk
+		false,                                                          // 15 spi
+		0,                                                              // 16 position_source
+	];
+}
+
+async function openSkyGetPlanes(request, env, ctx) {
 	const newHeaders = new Headers();
 	newHeaders.set("Access-Control-Allow-Origin", "*");
 	newHeaders.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
@@ -25,79 +61,62 @@ async function openSkyGetPlanes(request, env, ctx) {
 
 	const url = new URL(request.url);
 	const searchParams = url.searchParams;
-	const lamin = searchParams.get('lamin');
-	const lomin = searchParams.get('lomin');
-	const lamax = searchParams.get('lamax');
-	const lomax = searchParams.get('lomax');
 
-	let token = await env.OPENSKY_NETWORK.get("AUTH_TOKEN");
+	// Preferred contract: center point + radius (nautical miles). Fall back to
+	// the legacy bounding-box params so an older deployed frontend keeps working.
+	let lat = searchParams.get('lat');
+	let lon = searchParams.get('lon');
+	let dist = searchParams.get('dist');
 
-	if (debug) {
-		const cachedFlights = await env.OPENSKY_NETWORK.get("DEBUG_FLIGHTS");
-		if (cachedFlights) {
-			console.log("debug mode on. returning cached flights");
-			return new Response(cachedFlights, { headers: newHeaders, status: 200 });
+	if (!lat || !lon) {
+		const lamin = parseFloat(searchParams.get('lamin') ?? '');
+		const lomin = parseFloat(searchParams.get('lomin') ?? '');
+		const lamax = parseFloat(searchParams.get('lamax') ?? '');
+		const lomax = parseFloat(searchParams.get('lomax') ?? '');
+		if ([lamin, lomin, lamax, lomax].every((n) => !Number.isNaN(n))) {
+			lat = String((lamin + lamax) / 2);
+			lon = String((lomin + lomax) / 2);
+			const spanKm = ((lamax - lamin) / 2) * 111;
+			dist = dist ?? String(Math.max(1, Math.round(spanKm / 1.852)));
 		}
 	}
 
-	if (typeof (token) !== "string") {
-		console.log("no token found, logging in");
-		console.log('user', openskyClientId);
-		console.log('pass', openskyClientSecret);
-		const loginResponse = await fetch(
-			`https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token`,
-			{
-				method: "POST",
+	if (!lat || !lon) {
+		return new Response("Missing lat/lon", { status: 400, headers: newHeaders });
+	}
+	dist = dist ?? "30";
+
+	let lastError = "no mirror tried";
+	for (const buildUrl of ADSB_MIRRORS) {
+		const target = buildUrl(lat, lon, dist);
+		try {
+			const resp = await fetch(target, {
 				headers: {
-					"Content-Type": "application/x-www-form-urlencoded"
+					"User-Agent": "skylive (github.com/ajakate/skylive)",
+					"Accept": "application/json",
 				},
-				body: `client_id=${openskyClientId}&client_secret=${openskyClientSecret}&grant_type=client_credentials`
 			});
+			if (!resp.ok) {
+				lastError = `${target} -> ${resp.status}`;
+				console.log("mirror not ok", lastError);
+				continue;
+			}
+			const data = await resp.json();
+			const aircraft = Array.isArray(data?.ac) ? data.ac : (Array.isArray(data?.aircraft) ? data.aircraft : []);
+			const nowSec = Math.floor(Date.now() / 1000);
+			const states = aircraft
+				.filter((ac: any) => typeof ac.lat === "number" && typeof ac.lon === "number")
+				.map((ac: any) => toOpenskyState(ac, nowSec));
 
-		if (!loginResponse.ok) {
-			return new Response("Login failed", { status: 500, headers: newHeaders });
-		}
-
-		const loginData = await loginResponse.json();
-		token = loginData.access_token;
-
-		try {
-			const r = await env.OPENSKY_NETWORK.put("AUTH_TOKEN", token, { expirationTtl: expirationTime });
-			console.log("sucessful cache for token")
-			console.log(r)
-		}
-		catch (e) {
-			console.log("Error caching token");
-			console.log(e);
-		}
-	}
-
-	const flightsResponse = await fetch(
-		`https://opensky-network.org/api/states/all?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`, {
-		headers: { Authorization: `Bearer ${token}` },
-	});
-
-	if (!flightsResponse.ok) {
-		return new Response("Failed to fetch flights", { status: 500, headers: newHeaders });
-	}
-
-	const flightsData = await flightsResponse.json();
-
-	if (debug) {
-		try {
-			const r = await env.OPENSKY_NETWORK.put("DEBUG_FLIGHTS", JSON.stringify(flightsData), { expirationTtl: debugCacheTime });
-			console.log("sucessful cache for debug")
-			console.log(r)
-		}
-		catch (e) {
-			console.log("Error caching flights");
-			console.log(e);
+			return new Response(JSON.stringify({ time: nowSec, states }), { headers: newHeaders });
+		} catch (e: any) {
+			lastError = `${target} threw: ${e?.message}`;
+			console.log("mirror threw", lastError);
 		}
 	}
 
-	return new Response(JSON.stringify(flightsData), {
-		headers: newHeaders,
-	});
+	console.log("all mirrors failed", lastError);
+	return new Response(`Failed to fetch flights: ${lastError}`, { status: 502, headers: newHeaders });
 }
 
 async function flightawareGetFlightInfo(request, env, ctx) {

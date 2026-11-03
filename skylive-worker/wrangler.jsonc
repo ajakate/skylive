@@ -11,12 +11,6 @@
 		"enabled": true,
 		"head_sampling_rate": 1
 	},
-	"kv_namespaces": [
-		{
-			"binding": "OPENSKY_NETWORK",
-			"id": "37577ea42dd945ed86753d94912b0038"
-		}
-	],
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

@@ -3,16 +3,16 @@ import '../App.css'
 
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import 'leaflet-rotatedmarker';
-import { EarthLocation } from '../models/earthLocation'
 import Flight from '../models/flight'
 import FlightMarker from './FlightMarker'
 import L from 'leaflet';
 
+const SEARCH_RADIUS_NM = 30
 
-const getPlanesForBox = async (minLat: number, minLong: number, maxLat: number, maxLong: number) => {
+const getPlanesNearby = async (lat: number, lon: number, distNm: number) => {
     const backendUrl = import.meta.env.VITE_API_URL
     const response = await fetch(
-      `${backendUrl}?route=openskyGetPlanes&lamin=${minLat}&lomin=${minLong}&lamax=${maxLat}&lomax=${maxLong}`
+      `${backendUrl}?route=openskyGetPlanes&lat=${lat}&lon=${lon}&dist=${distNm}`
     );
     return await response.json();
 }
@@ -60,10 +60,9 @@ export default function MapComponent({ latitude, longitude }) {
   const [flights, setFlights] = useState([])
 
   const fetchFlights = useCallback(async () => {
-    let loc = new EarthLocation(latitude, longitude)
-    let box = loc.box(50)
-    const response = await getPlanesForBox(box.minLat, box.minLong, box.maxLat, box.maxLong)
-    const liveFlights = response['states'].map((state: any) => Flight.fromOpensky(state))
+    const response = await getPlanesNearby(latitude, longitude, SEARCH_RADIUS_NM)
+    const states = response?.['states'] ?? []
+    const liveFlights = states.map((state: any) => Flight.fromOpensky(state))
     setFlights(liveFlights)
   }, [latitude, longitude])
 
