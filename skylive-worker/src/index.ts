@@ -105,7 +105,11 @@ async function openSkyGetPlanes(request, env, ctx) {
 			const aircraft = Array.isArray(data?.ac) ? data.ac : (Array.isArray(data?.aircraft) ? data.aircraft : []);
 			const nowSec = Math.floor(Date.now() / 1000);
 			const states = aircraft
-				.filter((ac: any) => typeof ac.lat === "number" && typeof ac.lon === "number")
+				// Keep real aircraft only. ADS-B category C* is surface vehicles
+				// and obstacles (airport service trucks, etc.) that the raw feed
+				// includes but OpenSky's states/all never did.
+				.filter((ac: any) => typeof ac.lat === "number" && typeof ac.lon === "number"
+					&& !(typeof ac.category === "string" && ac.category.startsWith("C")))
 				.map((ac: any) => toOpenskyState(ac, nowSec));
 
 			return new Response(JSON.stringify({ time: nowSec, states }), { headers: newHeaders });
